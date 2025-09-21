@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enhanced To-Do List with Voice Note Reminder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Roboto', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    margin: 0;
+    padding: 2rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    color: #f0f0f0;
+  }
+  .container {
+    background: rgba(30, 30, 60, 0.85);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 620px;
+    width: 100%;
+    box-shadow: 0 15px 40px rgba(50, 50, 80, 0.6);
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    font-size: 2.3rem;
+    letter-spacing: 1.5px;
+    color: #f9fafb;
+  }
+  .input-group, .voice-group {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+  }
+  input[type="text"], input[type="time"] {
+    border: none;
+    padding: 0.75rem 1.2rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: box-shadow 0.3s ease;
+  }
+  input[type="text"] {
+    flex: 2;
+    background: #3a3f57;
+    color: #eee;
+  }
+  input[type="text"]::placeholder {
+    color: #bbb;
+  }
+  input[type="time"] {
+    flex: 1;
+    background: #3a3f57;
+    color: #eee;
+  }
+  input[type="time"]::-webkit-datetime-edit {
+    color: #eee;
+  }
+  input[type="time"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-clear-button {
+    display: none;
+  }
+  input[type="time"]:focus, input[type="text"]:focus {
+    outline: none;
+    box-shadow: 0 0 6px 3px #ffca28cc;
+  }
+  button {
+    cursor: pointer;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.2rem;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    transition: background 0.35s ease, box-shadow 0.35s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  }
+  button.add-btn {
+    background: #4caf50;
+    color: #f0f0f0;
+    flex-shrink: 0;
+  }
+  button.add-btn:hover {
+    background: #43a047;
+    box-shadow: 0 6px 15px #66bb6a;
+  }
+  button.record-btn {
+    background: #fb8c00;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 1rem;
+    padding: 0.6rem 1.25rem;
+    flex-grow: 1;
+  }
+  button.record-btn.recording {
+    background: #e53935;
+    box-shadow: 0 0 14px 3px #ef5350;
+  }
+  #record-status {
+    font-size: 0.95rem;
+    color: #ffcc80;
+    min-width: 140px;
+    text-align: center;
+  }
+  ul#task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 380px;
+    overflow-y: auto;
+    border-radius: 12px;
+    box-shadow: inset 0 0 15px -5px #000000a1;
+  }
+  ul#task-list::-webkit-scrollbar {
+    width: 8px;
+  }
+  ul#task-list::-webkit-scrollbar-track {
+    background: #2e3260;
+    border-radius: 10px;
+  }
+  ul#task-list::-webkit-scrollbar-thumb {
+    background-color: #6272ff;
+    border-radius: 10px;
+    border: 2px solid #2e3260;
+  }
+  ul#task-list li {
+    background: #394263dd;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    margin: 0.5rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.3s ease, transform 0.2s ease;
+  }
+  ul#task-list li:hover {
+    background: #474e8cdd;
+    transform: translateY(-2px);
+  }
+  .task-left {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    min-width: 0;
+    gap: 0.6rem;
+  }
+  .task-text {
+    margin: 0 0.75rem 0 0;
+    font-size: 1.1rem;
+    word-break: break-word;
+    flex-grow: 1;
+    min-width: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .task-text.completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+    color: #a0a0a0;
+  }
+  .task-time {
+    font-size: 0.9rem;
+    color: #ffca28;
+    font-weight: 500;
+    min-width: 80px;
+    user-select: none;
+  }
+  .task-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+  .task-actions button {
+    background: transparent;
+    border: none;
+    color: #c4c4ff;
+    cursor: pointer;
+    font-size: 1.3rem;
+    transition: color 0.3s ease;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .task-actions button:hover {
+    color: #ffd54f;
+  }
+  .task-actions button.delete-btn:hover {
+    color: #ef5350;
+  }
+  input.edit-input, input.edit-time {
+    font-size: 1rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: none;
+    outline: 2px solid #ffca28;
+    background: #515987;
+    color: white;
+  }
+  input.edit-time {
+    width: 100px;
+  }
+  button.play-btn {
+    background: #5c6bc0;
+    color: white;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    font-size: 1.2rem;
+    padding: 0;
+    box-shadow: 0 2px 10px #4855a8aa;
+  }
+  button.play-btn:hover {
+    background: #3f51b5;
+  }
+  button.play-btn:active {
+    transform: scale(0.9);
+  }
+  audio.task-audio {
+    display: none;
+  }
+  .footer {
+    text-align: center;
+    color: #bbbbbbcc;
+    font-size: 0.85rem;
+    margin-top: 1.25rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>To-Do List with Voice Note Reminder</h1>
+  <div class="input-group">
+    <input type="text" id="new-task" placeholder="Add a new task..." autocomplete="off" />
+    <input type="time" id="new-task-time" />
+    <button class="add-btn" id="add-task-btn" title="Add Task">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus" width="20" height="20"
+        viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+      Add
+    </button>
+  </div>
+  <div class="voice-group">
+    <button id="record-btn" class="record-btn" title="Record Voice Note">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round" class="feather feather-mic" width="20" height="20"
+        viewBox="0 0 24 24">
+        <path
+          d="M12 1c-1.654 0-3 1.346-3 3v7c0 1.654 1.346 3 3 3s3-1.346 3-3V4c0-1.654-1.346-3-3-3z" />
+        <path d="M19 10v1c0 3.308-2.692 6-6 6s-6-2.692-6-6v-1" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+      <span id="record-status-text">Start Recording Voice Note</span>
+    </button>
+  </div>
+  <ul id="task-list"></ul>
+  <div class="footer">Record voice notes with tasks; they will play automatically at the scheduled time.</div>
+</div>
+
+<script>
+  const taskInput = document.getElementById('new-task');
+  const timeInput = document.getElementById('new-task-time');
+  const addTaskBtn = document.getElementById('add-task-btn');
+  const taskList = document.getElementById('task-list');
+  const recordBtn = document.getElementById('record-btn');
+  const recordStatusText = document.getElementById('record-status-text');
+
+  let tasks = [];
+  let notifiedTaskIds = new Set();
+
+  // Voice recording variables
+  let mediaRecorder = null;
+  let audioChunks = [];
+
+  // Toggle recording on button click
+  recordBtn.addEventListener('click', async () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      stopRecording();
+    } else {
+      if (!taskInput.value.trim()) {
+        alert('Please enter a task first before recording a voice note.');
+        return;
+      }
+      await startRecording();
+    }
+  });
+
+  // Start recording audio
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.start();
+
+      recordBtn.classList.add('recording');
+      recordStatusText.textContent = 'Recording... Click to Stop';
+
+      mediaRecorder.ondataavailable = e => {
+        audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        // Save audio with task, update existing or create new
+        const text = taskInput.value.trim();
+        const time = timeInput.value;
+
+        let taskIndex = tasks.findIndex(t => t.text === text && t.time === time);
+        if (taskIndex === -1) {
+          taskIndex = tasks.length;
+          tasks.push({
+            id: Date.now(),
+            text,
+            time,
+            audioUrl,
+            completed: false,
+            isEditing: false
+          });
+        } else {
+          tasks[taskIndex].audioUrl = audioUrl;
+        }
+        saveTasks();
+        renderTasks();
+        recordBtn.classList.remove('recording');
+        recordStatusText.textContent = 'Start Recording Voice Note';
+      };
+    } catch (error) {
+      alert('Microphone access denied or not available.');
+      recordBtn.classList.remove('recording');
+      recordStatusText.textContent = 'Start Recording Voice Note';
+    }
+  }
+
+  // Stop recording audio
+  function stopRecording() {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+    }
+  }
+
+  // Load tasks on page load
+  window.onload = () => {
+    const storedTasks = localStorage.getItem('tasks');
+    if (storedTasks) {
+      tasks = JSON.parse(storedTasks);
+      renderTasks();
+    }
+    startVoiceNoteChecker();
+  };
+
+  // Save tasks to localStorage
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Render task list
+  function renderTasks() {
+    taskList.innerHTML = '';
+    tasks.forEach(task => {
+      const li = document.createElement('li');
+
+      const leftDiv = document.createElement('div');
+      leftDiv.className = 'task-left';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = task.completed;
+      checkbox.title = 'Mark as Completed';
+      checkbox.addEventListener('change', () => {
+        task.completed = checkbox.checked;
+        saveTasks();
+        renderTasks();
+      });
+
+      let taskTextElem;
+      if (task.isEditing) {
+        taskTextElem = document.createElement('input');
+        taskTextElem.type = 'text';
+        taskTextElem.className = 'edit-input';
+        taskTextElem.value = task.text;
+        taskTextElem.addEventListener('keydown', e => {
+          if (e.key === 'Enter') finishEditing(task, taskTextElem.value, timeEditElem.value);
+          if (e.key === 'Escape') cancelEditing(task);
+        });
+        taskTextElem.addEventListener('blur', () => finishEditing(task, taskTextElem.value, timeEditElem.value));
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(taskTextElem);
+      } else {
+        taskTextElem = document.createElement('span');
+        taskTextElem.className = 'task-text' + (task.completed ? ' completed' : '');
+        taskTextElem.textContent = task.text;
+        taskTextElem.title = 'Double click to edit';
+        taskTextElem.addEventListener('dblclick', () => {
+          startEditing(task);
+        });
+        leftDiv.appendChild(checkbox);
+        leftDiv.appendChild(taskTextElem);
+      }
+
+      if (task.isEditing) {
+        timeEditElem = document.createElement('input');
+        timeEditElem.type = 'time';
+        timeEditElem.className = 'edit-time';
+        timeEditElem.value = task.time || '';
+        timeEditElem.addEventListener('keydown', e => {
+          if (e.key === 'Enter') finishEditing(task, taskTextElem.value, timeEditElem.value);
+          if (e.key === 'Escape') cancelEditing(task);
+        });
+        timeEditElem.addEventListener('blur', () => finishEditing(task, taskTextElem.value, timeEditElem.value));
+        leftDiv.appendChild(timeEditElem);
+      } else {
+        const timeElem = document.createElement('span');
+        timeElem.className = 'task-time';
+        timeElem.textContent = task.time || '';
+        timeElem.title = 'Task due time';
+        leftDiv.appendChild(timeElem);
+      }
+
+      if (task.audioUrl && !task.isEditing) {
+        const playBtn = document.createElement('button');
+        playBtn.className = 'play-btn';
+        playBtn.title = 'Play Voice Note';
+        playBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" class="feather feather-play" width="18" height="18"
+            viewBox="0 0 24 24">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>`;
+        playBtn.addEventListener('click', () => {
+          playAudio(task.audioUrl);
+        });
+        leftDiv.appendChild(playBtn);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'task-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.title = 'Edit task';
+      editBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit" width="18" height="18"
+          viewBox="0 0 24 24">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+        </svg>`;
+      editBtn.addEventListener('click', () => {
+        if (!task.isEditing) {
+          startEditing(task);
+          renderTasks();
+        }
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.title = 'Delete task';
+      deleteBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2" width="18" height="18"
+          viewBox="0 0 24 24">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>`;
+      deleteBtn.addEventListener('click', () => {
+        tasks = tasks.filter(t => t.id !== task.id);
+        notifiedTaskIds.delete(task.id);
+        saveTasks();
+        renderTasks();
+      });
+
+      actions.appendChild(editBtn);
+      actions.appendChild(deleteBtn);
+
+      li.appendChild(leftDiv);
+      li.appendChild(actions);
+
+      taskList.appendChild(li);
+    });
+  }
+
+  function playAudio(url) {
+    const audio = new Audio(url);
+    audio.play();
+  }
+
+  function startEditing(task) {
+    task.isEditing = true;
+    renderTasks();
+  }
+
+  function finishEditing(task, newText, newTime) {
+    if (!newText.trim()) {
+      tasks = tasks.filter(t => t.id !== task.id);
+      notifiedTaskIds.delete(task.id);
+    } else {
+      task.text = newText.trim();
+      task.time = newTime || '';
+      task.isEditing = false;
+    }
+    saveTasks();
+    renderTasks();
+  }
+
+  function cancelEditing(task) {
+    task.isEditing = false;
+    renderTasks();
+  }
+
+  addTaskBtn.addEventListener('click', () => {
+    const text = taskInput.value.trim();
+    const time = timeInput.value;
+    if (!text) {
+      alert('Please enter a task');
+      return;
+    }
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      alert('Please stop recording before adding a new task.');
+      return;
+    }
+    const newTask = {
+      id: Date.now(),
+      text,
+      time,
+      audioUrl: null,
+      completed: false,
+      isEditing: false
+    };
+    tasks.push(newTask);
+    saveTasks();
+    renderTasks();
+    taskInput.value = '';
+    timeInput.value = '';
+  });
+
+  taskInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      addTaskBtn.click();
+    }
+  });
+
+  // Voice note timing checker
+  function startVoiceNoteChecker() {
+    checkVoiceNotes();
+    setInterval(checkVoiceNotes, 30000);
+  }
+
+  function checkVoiceNotes() {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5);
+
+    tasks.forEach(task => {
+      if (
+        !task.completed &&
+        task.time === currentTime &&
+        !notifiedTaskIds.has(task.id) &&
+        task.audioUrl
+      ) {
+        playAudio(task.audioUrl);
+        notifiedTaskIds.add(task.id);
+      }
+    });
+  }
+
+  window.onload = () => {
+    const stored = localStorage.getItem('tasks');
+    if (stored) {
+      tasks = JSON.parse(stored);
+      renderTasks();
+    }
+    startVoiceNoteChecker();
+  };
+
+  function saveTasks() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+</script>
+</body>
+</html>
